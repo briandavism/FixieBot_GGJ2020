@@ -39,11 +39,14 @@ enum states {
   DECRYPTING_DONE     // If decrypting is done
 };
 
-int state = IDLE;
+int state = IDLE;     // Initial state
 
 bool testRunFinished = false;       // A bool just to help the temporary time-based triggers for events
 bool generateEventPressed = false;  // A bool to check if the event button was pressed (needs to be implemented)
+bool firstIdleFrame = true;         // Setting the first idle frame to be true at start (idle initiation flag)
 
+unsigned long timeLatestIdleStarted;
+int eventDelay; 
 
 // IMAGES
 const unsigned char face_black [] PROGMEM = {
@@ -747,31 +750,42 @@ void loop() {
 
   // **** CHECKING THE ACTIVE STATE ****** //
   if (state == IDLE) {                                          // If idle
-    Serial.print(state);
+    if (firstIdleFrame) {
+       // Storing the idle start time for event triggering
+      timeLatestIdleStarted = millis();
+      // Generate a random delay between min & max for the next event to occur in millis
+      eventDelay = generateEventTiming(5000, 10000); // Min always needs to be more than the blink loop in total (e.g. 4000)
+      firstIdleFrame = false;
+    }
+    // Play idle animation
     playIdle();
   } else if (state == NEEDS_POWER) {                            // If the robot needs power
-    Serial.print(state);
+    firstIdleFrame = true; //hack
     playNeedsPower();
   } else if (state == BEING_POWERED) {                          // If the robot is being powered
-    Serial.print(state);
+    firstIdleFrame = true;
     playBeingPowered();
   } else if (state == POWERING_DONE) {                          // If the powering is done
-    Serial.print(state);
+    firstIdleFrame = true;
     playPoweringDone();
     stat_power = 0; // Just resetting the power back to zero for now
   } else if (state == NEEDS_TALKING) {                          // If the robot wants to talk
-    Serial.print(state);
+    firstIdleFrame = true;
     playNeedsTalking();
   } else if (state == DECRYPTING_DONE) {                        // If the decryption is done
-    Serial.print(state);
+    firstIdleFrame = true;
     playDecryptingDone();
   }
+
+  Serial.println(eventDelay);
+  Serial.println(millis()-timeLatestIdleStarted);
+  Serial.println((millis()-timeLatestIdleStarted) <= eventDelay);
 
   // ***** CONDITIONS & TRIGGERS FOR STATE CHANGES **** //
   
   // TODO: Add the key button to trigger a random change
   // if generate event button pressed (todo), generate random value between 0, 3(?), and activate the state
-  if (generateEventPressed) {
+  /*if (generateEventPressed) {
     int eventNumber =  random(0, 1);
     if (eventNumber == 0) {
       state = NEEDS_POWER;
@@ -779,19 +793,30 @@ void loop() {
     else if (eventNumber == 1) {
       state = NEEDS_TALKING;
     }
-  }
+  }*/
   
   // If power is full, switch to powering_done. Only place where power is increased is from the beingpowered.
   if (stat_power >= 100) {
     state = POWERING_DONE;
   }
+
+  if (state == IDLE && (millis()-timeLatestIdleStarted) <= eventDelay) {
+    //int eventNumber =  random(0, 1); // In case we have time for multiple events to occur
+    int eventNumber = 0;
+    if (eventNumber == 0) { // Structure ready for multiple events
+      state = NEEDS_POWER;
+    }
+    /*else if (eventNumber == 1) {
+      state = NEEDS_TALKING;
+    }*/
+  }
   
   // TIME-BASED TEMPORARY TRIGGERS 
   // Trigger needs power mode after 5 secs from start
-  if (millis() > 1000 && testRunFinished == false) {
+  /*if (millis() > 1000 && testRunFinished == false) {
     state = NEEDS_POWER;
     testRunFinished = true;
-  }/*
+  }*//*
   // Trigger powering mode after 10 secs from start
   if (millis() > 10000 && testRunFinished == false) {
     state = BEING_POWERED;
@@ -809,11 +834,15 @@ void loop() {
   }*/
 }
 
+int generateEventTiming(int min, int max) {
+  int timing = random(min, max);
+  return timing;
+}
 
 // ANIMATIONS //
 
 void playIdle() {
-
+  
   // Sample idle routine
   // Eyes open
   display.clearDisplay();
