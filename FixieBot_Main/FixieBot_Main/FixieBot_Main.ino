@@ -795,11 +795,12 @@ void loop() {
     }
   }*/
   
-  // If power is full, switch to powering_done. Only place where power is increased is from the beingpowered.
+  // If power is full, switch to powering_done. Only place where the power is increased is from the beingpowered.
   if (stat_power >= 100) {
     state = POWERING_DONE;
   }
 
+  // If the generated random event delay since idle is past, trigger an event
   if (state == IDLE && (millis()-timeLatestIdleStarted) <= eventDelay) {
     //int eventNumber =  random(0, 1); // In case we have time for multiple events to occur
     int eventNumber = 0;
