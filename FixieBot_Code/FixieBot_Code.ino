@@ -36,8 +36,8 @@ int pot1Value = 0;
 int pot2Value = 0;
 
 
-int sliderTarget = 100;
-int pot1Target = 75;
+int sliderTarget = 100; //target in pixels from 1-119
+int pot1Target = 1;
 int pot2Target = 50;
 
 
@@ -122,14 +122,14 @@ display.drawRect((121-2)/100*pot1Target+2,32,5,11,WHITE);
 display.drawRect((121-2)/100*pot2Target+2,49,5,11,WHITE);
 
 int sliderPixel = (123-4)*(sliderValue/(float)referenceVoltageValue);
-//int pot1Pixel = 
-//int pot2Pixel = 
+int pot1Pixel = (123-4)*(pot1Value/(float)referenceVoltageValue);
+int pot2Pixel = (123-4)*(pot2Value/(float)referenceVoltageValue);
 
 
 //Current Values
 display.drawLine(sliderPixel+4,17,sliderPixel+4,23,WHITE);
-display.drawLine(11,34,11,40,WHITE);
-display.drawLine((123-4)/100*(pot2Value/referenceVoltageValue),51,(123-4)/100*(pot2Value/referenceVoltageValue),57,WHITE);
+display.drawLine(pot1Pixel+4,34,pot1Pixel+4,40,WHITE);
+display.drawLine(pot2Pixel+4,51,pot2Pixel+4,57,WHITE);
 
 //Power Bar
   //display.drawRect(1,44,126,20,WHITE);
