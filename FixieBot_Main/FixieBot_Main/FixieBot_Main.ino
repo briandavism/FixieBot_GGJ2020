@@ -24,8 +24,8 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 // Pin IDs
 const int encoderTurnPin = 2;   // Pin number for encoder (key)
-const int encoderPressPin = 8;  // Pin number for encoder (key) press
-const int talkingPin = 2;       // Pin number for talking
+//const int encoderPressPin = 8;  // Pin number for encoder (key) press
+const int talkingPin = A1;       // Pin number for talking
 const int soundPin = 6;         // Pin number for sound
 
 // Stats
@@ -682,7 +682,7 @@ void setup() {
 
   // Encoder (key turner) setup
   pinMode(encoderTurnPin, INPUT_PULLUP);
-  //attachInterrupt(digitalPinToInterrupt(encoderTurnPin), increasePower, RISING); // commented out while testing
+  attachInterrupt(digitalPinToInterrupt(encoderTurnPin), increasePower, RISING); // commented out while testing
   attachInterrupt(digitalPinToInterrupt(talkingPin), decryptMessage, RISING);
 
   //playStartupSound();
@@ -769,8 +769,8 @@ void loop() {
   // If the generated random event delay since idle is past, trigger an event
   if (state == IDLE && (millis()-timeLatestIdleStarted) >= eventDelay) {
     Serial.println("Event triggered");
-    //int eventNumber =  random(0, 1); // In case we have time for multiple events to occur
-    int eventNumber = 1;
+    int eventNumber =  random(0, 2); // In case we have time for multiple events to occur
+    //int eventNumber = 1;
     if (eventNumber == 0) { // Structure ready for multiple events
       state = NEEDS_POWER;
     }
@@ -807,7 +807,8 @@ void playNeedsPowerSound() {
   }
 }
 void playPoweredActionSound(){
-  tone(soundPin,5000,10);
+  tone(soundPin,5000,5);
+  delay(5);
 }
 
 void playDonePoweringSound() {
@@ -1025,8 +1026,8 @@ void increasePower() {
     state = BEING_POWERED;
     if (stat_power < 100) {
       playPoweredActionSound();
-      //stat_power = stat_power + 0.5;
-      stat_power = stat_power + 20;
+      stat_power = stat_power + 0.5;
+      //stat_power = stat_power + 20;
     }
   }
 }
