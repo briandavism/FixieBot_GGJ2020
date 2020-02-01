@@ -753,14 +753,17 @@ void setup() {
 
 
 void loop() {
-  Serial.println(stat_decrypt);
+  // Serial.println(stat_decrypt);
   // **** CHECKING THE ACTIVE STATE ****** //
-  if (state == IDLE) {                                          // If idle
+  if (state == IDLE) { 
+    Serial.println("We're in idle");
+    // If idle
     if (firstIdleFrame) {
+       Serial.println("FirstIdleFrame");
        // Storing the idle start time for event triggering
       timeLatestIdleStarted = millis();
       // Generate a random delay between min & max for the next event to occur in millis
-      eventDelay = generateEventTiming(5000, 10000); // Important! Min always needs to be more than the blink loop (e.g. 5000)
+      eventDelay = generateEventTiming(7000, 10000); // Important! Min always needs to be more than the blink loop (e.g. 5000)
       firstIdleFrame = false;
     }
     
@@ -822,6 +825,7 @@ void loop() {
 
   // If the generated random event delay since idle is past, trigger an event
   if (state == IDLE && (millis()-timeLatestIdleStarted) >= eventDelay) {
+    Serial.println("Event triggered");
     //int eventNumber =  random(0, 1); // In case we have time for multiple events to occur
     int eventNumber = 1;
     if (eventNumber == 0) { // Structure ready for multiple events
@@ -897,6 +901,7 @@ void playPoweringDone() {
   display.display();
   delay(1500);
   state = IDLE;
+  timeLatestIdleStarted = millis(); // Hack: for some reason I need to define this here as well.
 }
 
 void playNeedsTalking() {
@@ -967,6 +972,9 @@ void playDecryptingDone() {
   delay(5000);
   // Returning to idle
   state = IDLE;
+  Serial.println("should go to idle!");
+  Serial.println(firstIdleFrame);
+  timeLatestIdleStarted = millis(); // Hack: for some reason I need to define this here as well.
   //testRunFinished = true;
 }
 
