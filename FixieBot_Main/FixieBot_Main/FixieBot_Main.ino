@@ -26,8 +26,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 const int encoderTurnPin = 2;   // Pin number for encoder (key)
 const int encoderPressPin = 8;  // Pin number for encoder (key) press
 const int talkingPin = 2;       // Pin number for talking
-
-const int sound = 6;            // ??
+const int soundPin = 6;         // Pin number for sound
 
 // Stats
 float stat_power = 0;           // Robot's power, starts from 0
@@ -46,13 +45,22 @@ enum states {
 
 int state = IDLE;     // Initial state setup
 
+// Flags
 bool testRunFinished = false;       // A bool just to help the temporary time-based triggers for events
 bool generateEventPressed = false;  // A bool to check if the event button was pressed (needs to be implemented)
 bool firstIdleFrame = true;         // Setting the first idle frame to be true at start (idle initiation flag)
 
+bool needsPowerSoundPlayed = false;  
+bool needsTalkingSoundPlayed = false; 
+bool doneDecryptingSoundPlayed = false;
+bool donePoweringSoundPlayed = false;
+
+
+// Delay related variables
 unsigned long timeLatestIdleStarted;
 int eventDelay;                     // Next event delay, randomized every time idle starts running
 
+// Layout variables
 int text_x = 30;                    // Talking text x coordinate
 int text_y = 50;                    // Talking text y coordinate
 
@@ -742,29 +750,39 @@ const unsigned char decrypting_done [] PROGMEM = {
 void setup() {
   Serial.begin(9600);
   pinMode(13,OUTPUT);
+  
+  pinMode(soundPin, OUTPUT);
+  
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
 
   // Encoder (key turner) setup
   pinMode(encoderTurnPin, INPUT_PULLUP);
-  // attachInterrupt(digitalPinToInterrupt(encoderTurnPin), increasePower, RISING); // commented out while testing
-  attachInterrupt(digitalPinToInterrupt(talkingPin), decryptMessage, RISING);
+  attachInterrupt(digitalPinToInterrupt(encoderTurnPin), increasePower, RISING); // commented out while testing
+  //attachInterrupt(digitalPinToInterrupt(talkingPin), decryptMessage, RISING);
 
+  //playStartupSound();
 }
 
 
 void loop() {
-  // Serial.println(stat_decrypt);
+
   // **** CHECKING THE ACTIVE STATE ****** //
   if (state == IDLE) { 
     Serial.println("We're in idle");
     // If idle
-    if (firstIdleFrame) {
+    if (firstIdleFrame) { // If it's the first frame of the new "round"
        Serial.println("FirstIdleFrame");
        // Storing the idle start time for event triggering
       timeLatestIdleStarted = millis();
       // Generate a random delay between min & max for the next event to occur in millis
       eventDelay = generateEventTiming(7000, 10000); // Important! Min always needs to be more than the blink loop (e.g. 5000)
+
+      // Resetting variables
       firstIdleFrame = false;
+      needsPowerSoundPlayed = false;
+      donePoweringSoundPlayed = false;
+      needsTalkingSoundPlayed = false;
+      doneDecryptingSoundPlayed = false;
     }
     
    //Testing event delay
@@ -827,7 +845,7 @@ void loop() {
   if (state == IDLE && (millis()-timeLatestIdleStarted) >= eventDelay) {
     Serial.println("Event triggered");
     //int eventNumber =  random(0, 1); // In case we have time for multiple events to occur
-    int eventNumber = 1;
+    int eventNumber = 0;
     if (eventNumber == 0) { // Structure ready for multiple events
       state = NEEDS_POWER;
     }
@@ -842,7 +860,100 @@ int generateEventTiming(int min, int max) {
   return timing;
 }
 
-// ANIMATIONS //
+// SOUNDS //
+void playStartupSound() {
+  tone(soundPin,500,200);
+  delay(200);
+  tone(soundPin,1000,200);
+  delay(400);
+  tone(soundPin,700,200);
+  delay(200);
+  tone(soundPin,1100,200);
+}
+
+void playNeedsPowerSound() {
+  if( needsPowerSoundPlayed != true) {
+    tone(soundPin,700,50);
+    delay(500);
+    tone(soundPin,800,50);
+    delay(500);
+    tone(soundPin,600,50);
+    needsPowerSoundPlayed = true;
+  }
+}
+void playPoweredActionSound(){
+  tone(soundPin,5000,10);
+}
+
+void playDonePoweringSound() {
+   if(donePoweringSoundPlayed != true) {
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      donePoweringSoundPlayed = true;
+   }
+}
+
+void playNeedsTalkingSound() {
+  if( needsTalkingSoundPlayed != true) {
+    tone(soundPin,7000,50);
+    delay(10);
+    tone(soundPin,8000,50);
+    delay(50);
+    tone(soundPin,5000,100);
+    delay(100);
+    tone(soundPin,10000,50);
+    needsTalkingSoundPlayed = true;
+  }
+}
+
+void playDecryptActionSound() {
+   tone(soundPin,5000,100);
+}
+
+void playDoneDecryptingSound() {
+   if(doneDecryptingSoundPlayed != true) {
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      doneDecryptingSoundPlayed = true;
+   }
+}
+
+
+// ANIMATIONS & some state logic //
 
 void playIdle() {
   // Eyes open
@@ -876,6 +987,7 @@ void playNeedsPower() {
   display.clearDisplay();
   display.drawBitmap(0, 0, needs_power_1, 128, 64, WHITE);
   display.display();
+  playNeedsPowerSound();
   delay(200);
   // 2nd picture
   display.clearDisplay();
@@ -899,6 +1011,7 @@ void playPoweringDone() {
   display.clearDisplay();
   display.drawBitmap(0, 0, eyes_satisfied, 128, 64, WHITE);
   display.display();
+  playDonePoweringSound();
   delay(1500);
   state = IDLE;
   timeLatestIdleStarted = millis(); // Hack: for some reason I need to define this here as well.
@@ -909,11 +1022,11 @@ void playNeedsTalking() {
   display.setCursor(text_x,text_y);
   display.setTextSize(1);
   display.cp437(true);
-  
   display.clearDisplay();
   display.drawBitmap(0, 0, needs_talking_1, 128, 64, WHITE);
   display.print(F("z¤!¤%Zzz%"));
   display.display();
+  playNeedsTalkingSound();
   
   delay(500);
   
@@ -968,6 +1081,7 @@ void playDecryptingDone() {
   display.cp437(true);
   display.print(F("You're great!"));
   display.display();
+  playDoneDecryptingSound();
   
   delay(5000);
   // Returning to idle
@@ -981,12 +1095,13 @@ void playDecryptingDone() {
 
 
 /* POWER FUNCTIONS */
-
 void increasePower() {
   if (state == NEEDS_POWER || state == BEING_POWERED) { // Only if the state is needs power or being powered
     state = BEING_POWERED;
     if (stat_power < 100) {
-      stat_power = stat_power + 0.5;
+      playPoweredActionSound();
+      //stat_power = stat_power + 0.5;
+      stat_power = stat_power + 20;
     }
   }
 }
@@ -1001,6 +1116,7 @@ void decryptMessage() {
   if (state == NEEDS_TALKING || state == BEING_DECRYPTED) { // Only if the state is needs decrypting or being decrypted
     state = BEING_DECRYPTED;
     if (stat_decrypt < 100) {
+      playDecryptActionSound();
       stat_decrypt = stat_decrypt + 20;
     }
   }
