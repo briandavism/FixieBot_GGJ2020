@@ -7,6 +7,7 @@
  * 
  */
 
+
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -25,6 +26,9 @@ const int encoderTurnPin = 9;
 const int encoderPressPin = 8;
 
 const int sound = 6;
+int encoderTurn = 2;
+
+float power = 0;
  
 void setup() {
   // put your setup code here, to run once:
@@ -44,10 +48,18 @@ void setup() {
   pinMode(13,OUTPUT);
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
+  
+//Encoder Setup
+  // make the pushbutton's pin an input:
+  pinMode(encoderTurn, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(encoderTurn), turn, RISING);
 }
 
 
+
 void loop() {
+
+  
   // put your main code here, to run repeatedly:
   //display.clearDisplay();
   //display.setCursor(0,0);
@@ -56,24 +68,33 @@ void loop() {
   //delay(1000);
   //display.display();
 
+//Display Loop
+  display.clearDisplay();
 
-    display.clearDisplay();
+//Power Bar
+  display.drawRect(1,44,126,20,WHITE);
+  display.fillRect(3,46,122*power/100,16,WHITE);
 
-  // Draw a single pixel in white
-  display.drawPixel(15, 15, WHITE);
-  display.drawRect(25,25,50,12,WHITE);
-  display.fillRect(27,27,20,8,WHITE);
-  display.setTextSize(1);      // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE); // Draw white text
-  display.setCursor(0, 0);     // Start at top-left corner
-  display.cp437(true);         // Use full 256 char 'Code Page 437' font
-  display.print(F("hello world"));
+//text example
+  //display.setTextSize(1);      // Normal 1:1 pixel scale
+  //display.setTextColor(SSD1306_WHITE); // Draw white text
+  //display.setCursor(0, 0);     // Start at top-left corner
+  //display.cp437(true);         // Use full 256 char 'Code Page 437' font
+  //display.print(F("hello world"));
 
   // Show the display buffer on the screen. You MUST call display() after
   // drawing commands to make them visible on screen!
   display.display();
-  delay(2000);
-  
+  delay(1);
+  if (power > 0) {
+  power = power - 0.05;
+  }
+}
+
+void turn() {
+  if (power < 100) {
+  power = power + 0.2;
+  }
 }
 
 void drawBar(float value){
