@@ -25,11 +25,20 @@ Adafruit_SSD1306 display(OLED_RESET);
 const int encoderTurnPin = 9;
 const int encoderPressPin = 8;
 
+int pot1Pin = A3;
+int pot2Pin = A2;
+int sliderPin = A1;
+
+int pot1Value = 0;
+int pot2Value = 0;
+int sliderValue = 0;
+
 const int sound = 6;
 int encoderTurn = 2;
 
 float power = 0;
- 
+
+
 void setup() {
   // put your setup code here, to run once:
 //splash tone
@@ -44,6 +53,8 @@ void setup() {
   delay(200);
   tone(sound,1100,200);
 */
+
+
 
   pinMode(13,OUTPUT);
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
@@ -76,11 +87,12 @@ void loop() {
   display.fillRect(3,46,122*power/100,16,WHITE);
 
 //text example
-  //display.setTextSize(1);      // Normal 1:1 pixel scale
-  //display.setTextColor(SSD1306_WHITE); // Draw white text
-  //display.setCursor(0, 0);     // Start at top-left corner
-  //display.cp437(true);         // Use full 256 char 'Code Page 437' font
-  //display.print(F("hello world"));
+  display.setTextSize(1);      // Normal 1:1 pixel scale
+  display.setTextColor(SSD1306_WHITE); // Draw white text
+  display.setCursor(0, 0);     // Start at top-left corner
+  display.cp437(true);         // Use full 256 char 'Code Page 437' font
+  pot1Value = analogRead(pot1Pin);
+  display.print(pot1Value);
 
   // Show the display buffer on the screen. You MUST call display() after
   // drawing commands to make them visible on screen!
