@@ -19,22 +19,24 @@ a 128x64 px screen
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define SCREEN_WIDTH 128        // OLED display width, in pixels
+#define SCREEN_HEIGHT 64        // OLED display height, in pixels
 
-const int encoderTurnPin = 9;
-const int encoderPressPin = 8;
+const int encoderTurnPin = 2;   // Pin number for encoder (key)
+const int encoderPressPin = 8;  // Pin number for encoder (key) press
 
-const int sound = 6;
+const int sound = 6;            // ??
+
+float stat_power = 0;                // Robot's power, starts from 0
 
 enum states {
-  IDLE,
-  NEEDS_POWER,
-  BEING_POWERED,
-  POWERING_DONE,
-  NEEDS_TALKING,
-  BEING_DECRYPTED,
-  DECRYPTING_DONE
+  IDLE,               // If idle
+  NEEDS_POWER,        // If robot needs power
+  BEING_POWERED,      // If robot is being powered
+  POWERING_DONE,      // If powering is done
+  NEEDS_TALKING,      // If robot wants to talk
+  BEING_DECRYPTED,    // If robot message is being decrypted
+  DECRYPTING_DONE     // If decrypting is done
 };
 
 int state = IDLE;
@@ -726,12 +728,14 @@ const unsigned char decrypting_done [] PROGMEM = {
 
 
 
-
-
-
 void setup() {
+  Serial.begin(9600);
   pinMode(13,OUTPUT);
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+
+  // Encoder (key turner) setup
+  pinMode(encoderTurnPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(encoderTurnPin), increasePower, RISING);
 
   /*display.setTextColor(0xFFFF);
   display.setCursor(0,0);
@@ -742,31 +746,31 @@ void setup() {
 
 void loop() {
 
-  // Doing actions based on the active state
-  if (state == IDLE) {
+  // **** CHECKING THE ACTIVE STATE ****** //
+  if (state == IDLE) {                                          // If idle
     Serial.print(state);
     playIdle();
-  } else if (state == NEEDS_POWER) {
+  } else if (state == NEEDS_POWER) {                            // If the robot needs power
     Serial.print(state);
     playNeedsPower();
-  } else if (state == BEING_POWERED) {
+  } else if (state == BEING_POWERED) {                          // If the robot is being powered
     Serial.print(state);
     playBeingPowered();
-    // TODO: Draw the progress bar process to the screen
-  } else if (state == POWERING_DONE) {
+  } else if (state == POWERING_DONE) {                          // If the powering is done
     Serial.print(state);
     playPoweringDone();
-  } else if (state == NEEDS_TALKING) {
+    stat_power = 0; // Just resetting the power back to zero for now
+  } else if (state == NEEDS_TALKING) {                          // If the robot wants to talk
     Serial.print(state);
     playNeedsTalking();
-  } else if (state == DECRYPTING_DONE) {
+  } else if (state == DECRYPTING_DONE) {                        // If the decryption is done
     Serial.print(state);
     playDecryptingDone();
   }
 
-  // CONDITIONS & TRIGGERS FOR STATE CHANGES //
-
-  // Add the key button to trigger a random change
+  // ***** CONDITIONS & TRIGGERS FOR STATE CHANGES **** //
+  
+  // TODO: Add the key button to trigger a random change
   // if generate event button pressed (todo), generate random value between 0, 3(?), and activate the state
   if (generateEventPressed) {
     int eventNumber =  random(0, 1);
@@ -777,12 +781,18 @@ void loop() {
       state = NEEDS_TALKING;
     }
   }
-
-  // TIME-BASED TEMPORARY TRIGGERS
-  // Trigger needs power mode after 5 secs from start
-  if (millis() > 5000 && testRunFinished == false) {
-    state = NEEDS_POWER;
+  
+  // If power is full, switch to powering_done. Only place where power is increased is from the beingpowered.
+  if (stat_power >= 100) {
+    state = POWERING_DONE;
   }
+  
+  // TIME-BASED TEMPORARY TRIGGERS 
+  // Trigger needs power mode after 5 secs from start
+  if (millis() > 1000 && testRunFinished == false) {
+    state = NEEDS_POWER;
+    testRunFinished = true;
+  }/*
   // Trigger powering mode after 10 secs from start
   if (millis() > 10000 && testRunFinished == false) {
     state = BEING_POWERED;
@@ -797,11 +807,7 @@ void loop() {
   } // Trigger powering done after 15 secs from start. Idle launches automatically afterwards
   if (millis() > 25000 && testRunFinished == false) {
     state = DECRYPTING_DONE;
-  }
-}
-
-void drawBar(float value){
-  display.fillRect(72,19,48*value/100,3,WHITE);
+  }*/
 }
 
 
@@ -809,8 +815,6 @@ void drawBar(float value){
 
 void playIdle() {
 
-
-  
   // Sample idle routine
   // Eyes open
   display.clearDisplay();
@@ -854,13 +858,21 @@ void playNeedsPower() {
 void playBeingPowered() {
   display.clearDisplay();
   display.drawBitmap(0, 0, powering_temp, 128, 64, WHITE);
+  
+  //Power Bar
+  display.drawRect(1,44,126,20,WHITE);
+  display.fillRect(3,46,122 * stat_power / 100,16,WHITE);
+ 
+  decreasePower();
+  
   display.display();
 }
 void playPoweringDone() {
   display.clearDisplay();
   display.drawBitmap(0, 0, eyes_satisfied, 128, 64, WHITE);
   display.display();
-  //delay(1000);
+  delay(1500);
+  state = IDLE;
 }
 
 void playNeedsTalking() {
@@ -882,6 +894,25 @@ void playDecryptingDone() {
   // Returning to idle
   state = IDLE;
   testRunFinished = true;
+}
+
+
+
+/* POWER FUNCTIONS */
+
+void increasePower() {
+  if (state == NEEDS_POWER || state == BEING_POWERED) { // Only if the state is needs power or being powered
+    state = BEING_POWERED;
+    if (stat_power < 100) {
+      stat_power = stat_power + 0.2;
+    }
+  }
+}
+
+void decreasePower() {
+   if (stat_power > 0) {
+    stat_power = stat_power - 0.05;
+  }
 }
 
 
