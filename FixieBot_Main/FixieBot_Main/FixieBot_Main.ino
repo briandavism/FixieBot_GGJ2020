@@ -27,6 +27,10 @@ const int encoderTurnPin = 2;   // Pin number for encoder (key)
 //const int encoderPressPin = 8;  // Pin number for encoder (key) press
 const int talkingPin = A1;       // Pin number for talking
 const int soundPin = 6;         // Pin number for sound
+int referenceVoltagePin = A0;   // Reference voltage pin (might not be in use)
+int pot1Pin = A3;               // Potentio 1 pin 
+int pot2Pin = A2;               // Potentio 2 pin 
+int sliderPin = A1;             // Slider pin
 
 // Stats
 float stat_power = 0;           // Robot's power, starts from 0
@@ -54,6 +58,17 @@ bool needsPowerSoundPlayed = false;
 bool needsTalkingSoundPlayed = false; 
 bool doneDecryptingSoundPlayed = false;
 bool donePoweringSoundPlayed = false;
+
+
+// Minigame 1 initializing
+int referenceVoltageValue = 0;
+int sliderValue = 0;
+int pot1Value = 0;
+int pot2Value = 0;
+
+int sliderTarget = 100; //target in pixels from 1-119 Will be randomized
+int pot1Target = 1;
+int pot2Target = 50;
 
 
 // Delay related variables
@@ -708,12 +723,17 @@ void loop() {
       donePoweringSoundPlayed = false;
       needsTalkingSoundPlayed = false;
       doneDecryptingSoundPlayed = false;
+
+      // Randomizing minigame variables
+      sliderTarget = random(1,119);
+      pot1Target = random(1,119);
+      pot2Target = random(1,119);
     }
     
-   //Testing event delay
-    Serial.println(eventDelay);
+    //Testing event delay
+    /*Serial.println(eventDelay);
     Serial.println(millis()-timeLatestIdleStarted);
-    Serial.println((millis()-timeLatestIdleStarted) >= eventDelay); // 20 000 - 10 000 = 10 000 
+    Serial.println((millis()-timeLatestIdleStarted) >= eventDelay);*/ // 20 000 - 10 000 = 10 000 
     
     // Play idle animation
     playIdle();
@@ -732,8 +752,9 @@ void loop() {
     firstIdleFrame = true;
     playNeedsTalking();
   } else if (state == BEING_DECRYPTED) {                          // If the robot wants to talk
+    runMatchingGame();
     firstIdleFrame = true;
-    playBeingDecrypted();
+    // playBeingDecrypted();
   } else if (state == DECRYPTING_DONE) {                        // If the decryption is done
     firstIdleFrame = true;
     playDecryptingDone();
@@ -779,6 +800,108 @@ void loop() {
     }
   }
 }
+
+// Matching Game
+void runMatchingGame() {
+  //Serial.println("game lauched!");
+  noTone(soundPin);
+
+  
+  display.clearDisplay(); // clear
+  
+  //Bars mini game
+  display.drawRect(0,0,128,64,WHITE); //Screen Frame
+  
+  //Get values from pots
+  pot1Value = analogRead(pot1Pin);
+  delay(10);// this delay is to help the ADC differentiate the 3 signals
+  pot1Value = analogRead(pot1Pin);
+  
+  pot2Value = analogRead(pot2Pin);
+  delay(10);
+  pot2Value = analogRead(pot2Pin);
+  
+  sliderValue = analogRead(sliderPin);
+  delay(10);
+  sliderValue = analogRead(sliderPin);
+
+  referenceVoltageValue = analogRead(referenceVoltagePin);
+  delay(10);
+  referenceVoltageValue = analogRead(referenceVoltagePin);
+  
+  //the balance lines
+  display.drawLine(4,20,123,20,WHITE); 
+  display.drawLine(4,37,123,37,WHITE);
+  display.drawLine(4,54,123,54,WHITE);
+
+  int target1min = (int)((121-2) / 100 * sliderTarget+2);
+  int target2min = (int)((121-2) / 100 * pot1Target+2);
+  int target3min = (int)((121-2) / 100 * pot2Target+2);
+  
+  int targetWidth = 5;
+
+  int target1max = (int)(target1min + targetWidth);
+  int target2max = (int)(target2min + targetWidth);
+  int target3max = (int)(target3min + targetWidth);
+  
+  //the target cursors
+  display.drawRect(target1min,15,targetWidth,11,WHITE); // Todo: check int rounding
+  display.drawRect(target2min,32,targetWidth,11,WHITE);
+  display.drawRect(target3min,49,targetWidth,11,WHITE);
+  
+  int sliderPixel = (123-4)*(sliderValue/(float)referenceVoltageValue);
+  int pot1Pixel = (123-4)*(pot1Value/(float)referenceVoltageValue);
+  int pot2Pixel = (123-4)*(pot2Value/(float)referenceVoltageValue);
+  
+  
+  //Current Values
+  display.drawLine(sliderPixel+4,17,sliderPixel+4,23,WHITE);
+  display.drawLine(pot1Pixel+4,34,pot1Pixel+4,40,WHITE);
+  display.drawLine(pot2Pixel+4,51,pot2Pixel+4,57,WHITE);
+  
+  display.display(); // draw
+
+  /*
+  Serial.print(target1min);
+  Serial.print(" ");
+  Serial.print(sliderPixel-targetWidth);
+    Serial.print(" ");
+  Serial.print(target1max);
+  Serial.println();
+
+  Serial.print(target2min);
+    Serial.print(" ");
+  Serial.print(pot1Pixel-targetWidth);
+    Serial.print(" ");
+  Serial.print(target2max);
+  Serial.println();
+
+  Serial.print(target3min);
+    Serial.print(" ");
+  Serial.print(pot2Pixel-targetWidth);
+    Serial.print(" ");
+  Serial.print(target3max);
+  Serial.println();
+
+  // Checking for winning condition, offset hacked
+  if (target1min <= (sliderPixel+targetWidth) && (sliderPixel+targetWidth) <= target1max){
+    Serial.println("1st one set!");
+  }
+  if (target2min <= (pot1Pixel+targetWidth) && (pot1Pixel+targetWidth) <= target2max) {
+    Serial.println("2nd one set!");
+  }
+  if (target3min <= (pot2Pixel+targetWidth) && (pot2Pixel+targetWidth) <= target3max){
+    Serial.println("3rd one set!");
+  } */
+
+  // State to decrypting done
+  if ((target1min <= (sliderPixel+targetWidth) && (sliderPixel+targetWidth) <= target1max) &&
+      (target2min <= (pot1Pixel+targetWidth) && (pot1Pixel+targetWidth) <= target2max) &&
+      (target3min <= (pot2Pixel+targetWidth) && (pot2Pixel+targetWidth) <= target3max)) {
+    state = DECRYPTING_DONE;
+  }
+}
+
 
 int generateEventTiming(int min, int max) {
   int timing = random(min, max);
@@ -843,9 +966,11 @@ void playNeedsTalkingSound() {
     tone(soundPin,8000,50);
     delay(50);
     tone(soundPin,5000,100);
-    delay(100);
+    delay(50);
     tone(soundPin,10000,50);
+    delay(50);
     needsTalkingSoundPlayed = true;
+    noTone(soundPin);
   }
 }
 
@@ -922,6 +1047,7 @@ void playNeedsPower() {
   delay(200);
 }
 void playBeingPowered() {
+  Serial.println("playBeingPowered inside the loop");
   display.clearDisplay();
   display.drawBitmap(0, 0, powering_1, 128, 64, WHITE);
   
@@ -967,10 +1093,38 @@ void playNeedsTalking() {
   display.display();
   
   delay(500);
+
+    display.setTextColor(SSD1306_BLACK);
+  display.setCursor(text_x,text_y);
+  display.setTextSize(1);
+  display.cp437(true);
+  display.clearDisplay();
+  display.drawBitmap(0, 0, needs_talking_1, 128, 64, WHITE);
+  display.print(F("z¤!¤%Zzz%"));
+  display.display();
+  playNeedsTalkingSound();
+  
+  delay(500);
+  
+  display.clearDisplay();
+  display.drawBitmap(0, 0, needs_talking_2, 128, 64, WHITE);
+
+  display.setTextColor(SSD1306_BLACK);
+  display.setCursor(text_x,text_y);
+  display.setTextSize(1);
+  display.cp437(true);
+  display.print(F("z¤!¤%Zzz%"));
+  display.display();
+  
+  delay(500);
+  Serial.println("PlayNeedsTalking 4th time done, switching to decrypted");
+
+  state = BEING_DECRYPTED;
+  
 }
 
 
-
+/*
 void playBeingDecrypted() {
   display.setTextColor(SSD1306_BLACK);
   display.setCursor(text_x,text_y);
@@ -995,7 +1149,7 @@ void playBeingDecrypted() {
   display.display();
   
   delay(500);
-}
+}*/
 
 void playDecryptingDone() {
   display.clearDisplay();
@@ -1025,7 +1179,8 @@ void increasePower() {
   if (state == NEEDS_POWER || state == BEING_POWERED) { // Only if the state is needs power or being powered
     state = BEING_POWERED;
     if (stat_power < 100) {
-      playPoweredActionSound();
+      Serial.println("Increased power");
+      //playPoweredActionSound();
       stat_power = stat_power + 0.5;
       //stat_power = stat_power + 20;
     }
@@ -1039,14 +1194,17 @@ void decreasePower() {
 }
 
 void decryptMessage() {
-  if (state == NEEDS_TALKING || state == BEING_DECRYPTED) { // Only if the state is needs decrypting or being decrypted
+  //startMatchingGame();
+  /*if (state == NEEDS_TALKING || state == BEING_DECRYPTED) { // Only if the state is needs decrypting or being decrypted
     state = BEING_DECRYPTED;
     if (stat_decrypt < 100) {
       playDecryptActionSound();
       stat_decrypt = stat_decrypt + 20;
     }
-  }
+  }*/
 }
+
+
 
 
 
