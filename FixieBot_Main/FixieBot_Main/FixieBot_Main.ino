@@ -1,9 +1,10 @@
 /* 
  *  GGJ 2020
- *  by: Br
+ *  by: Brian D. (dev & design & hw), Taru M. (dev & design), Elvira M. (art & design), Kevin A. (3D printing & design).
  * 
  * Inspired by the Tamaguino project by Alojz Jakob 
  * <http://jakobdesign.com>
+ * 
  * 
  */
 
@@ -50,7 +51,6 @@ enum states {
 int state = IDLE;     // Initial state setup
 
 // Flags
-bool testRunFinished = false;       // A bool just to help the temporary time-based triggers for events
 bool generateEventPressed = false;  // A bool to check if the event button was pressed (needs to be implemented)
 bool firstIdleFrame = true;         // Setting the first idle frame to be true at start (idle initiation flag)
 
@@ -58,6 +58,7 @@ bool needsPowerSoundPlayed = false;
 bool needsTalkingSoundPlayed = false; 
 bool doneDecryptingSoundPlayed = false;
 bool donePoweringSoundPlayed = false;
+bool isIncreasingPower = false;
 
 
 // Minigame 1 initializing
@@ -686,19 +687,87 @@ const unsigned char decrypting_done [] PROGMEM = {
 };
 
 
+const unsigned char tongue [] PROGMEM = { 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x06, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01, 0x80, 0x60, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x78, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0xcc, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x33, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x61, 0x80, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xff, 0xff, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xff, 0xff, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+
 
 void setup() {
   Serial.begin(9600);
   pinMode(13,OUTPUT);
-  
   pinMode(soundPin, OUTPUT);
+  randomSeed(analogRead(0));                  // Randomizing the seed between different startup times (mostly for the minigame
   
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
 
   // Encoder (key turner) setup
   pinMode(encoderTurnPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(encoderTurnPin), increasePower, RISING); // commented out while testing
-  attachInterrupt(digitalPinToInterrupt(talkingPin), decryptMessage, RISING);
+  //attachInterrupt(digitalPinToInterrupt(talkingPin), decryptMessage, RISING);
 
   //playStartupSound();
 }
@@ -730,7 +799,7 @@ void loop() {
       pot2Target = random(1,119);
     }
     
-    //Testing event delay
+    // Testing event delay
     /*Serial.println(eventDelay);
     Serial.println(millis()-timeLatestIdleStarted);
     Serial.println((millis()-timeLatestIdleStarted) >= eventDelay);*/ // 20 000 - 10 000 = 10 000 
@@ -800,6 +869,229 @@ void loop() {
     }
   }
 }
+
+int generateEventTiming(int min, int max) {
+  int timing = random(min, max);
+  return timing;
+}
+
+// SOUNDS //
+void playStartupSound() {
+  tone(soundPin,500,200);
+  delay(200);
+  tone(soundPin,1000,200);
+  delay(400);
+  tone(soundPin,700,200);
+  delay(200);
+  tone(soundPin,1100,200);
+}
+
+void playNeedsPowerSound() {
+  if( needsPowerSoundPlayed != true) {
+    tone(soundPin,700,50);
+    delay(500);
+    tone(soundPin,800,50);
+    delay(500);
+    tone(soundPin,600,50);
+    needsPowerSoundPlayed = true;
+  }
+}
+void playPoweredActionSound(){
+  tone(soundPin,5000,20);
+  delay(20);
+}
+
+void playDonePoweringSound() {
+   if(donePoweringSoundPlayed != true) {
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      donePoweringSoundPlayed = true;
+   }
+}
+
+void playNeedsTalkingSound() {
+  if( needsTalkingSoundPlayed != true) {
+    tone(soundPin,7000,50);
+    delay(10);
+    tone(soundPin,8000,50);
+    delay(50);
+    tone(soundPin,5000,100);
+    delay(50);
+    tone(soundPin,10000,50);
+    delay(50);
+    needsTalkingSoundPlayed = true;
+    noTone(soundPin);
+  }
+}
+
+void playDecryptActionSound() {
+   tone(soundPin,5000,100);
+}
+
+void playDoneDecryptingSound() {
+   if(doneDecryptingSoundPlayed != true) {
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,8000,50);
+      delay(50);
+      tone(soundPin,10000,50);
+      doneDecryptingSoundPlayed = true;
+   }
+}
+
+
+// ANIMATIONS & some state logic //
+
+void playIdle() {
+  // Eyes open
+  display.clearDisplay();
+  display.drawBitmap(0, 0, eyes_open, 128, 64, WHITE);
+  
+  display.display();
+  delay(2000); // eyes open for value
+
+  int variation = random(0,3);
+  if (variation == 0) {
+    // Eyes blinking
+    blinkEyes(500); // parameter: how long the eyes stay closed
+    delay(500);
+    blinkEyes(500);
+  } else if (variation == 1) {
+    showTongue(1500);
+  }
+
+}
+
+
+// Closes eyes for the time of the duration and opens them
+void blinkEyes(int duration) {
+  display.clearDisplay();
+  display.drawBitmap(0, 0, eyes_closed, 128, 64, WHITE);
+  display.display();
+  delay(duration);
+  display.clearDisplay();
+  display.drawBitmap(0, 0, eyes_open, 128, 64, WHITE);
+  display.display();
+}
+void showTongue(int duration) {
+  display.clearDisplay();
+  display.drawBitmap(0, 0, tongue, 128, 64, WHITE);
+  display.display();
+  delay(duration);
+  display.clearDisplay();
+  display.drawBitmap(0, 0, eyes_open, 128, 64, WHITE);
+  display.display();
+}
+
+
+void playNeedsPower() {
+  // Sample needs power routine
+  // 1st picture
+  display.clearDisplay();
+  display.drawBitmap(0, 0, needs_power_1, 128, 64, WHITE);
+  display.display();
+  playNeedsPowerSound();
+  delay(200);
+  // 2nd picture
+  display.clearDisplay();
+  display.drawBitmap(0, 0, needs_power_2, 128, 64, WHITE);
+  display.display();
+  delay(200);
+}
+void playBeingPowered() {
+  Serial.println("playBeingPowered inside the loop");
+  display.clearDisplay();
+  display.drawBitmap(0, 0, powering_1, 128, 64, WHITE);
+  
+  //Power Bar
+  display.drawRect(1,54,126,10,WHITE);
+  display.fillRect(3,56,122 * stat_power / 100,8,WHITE);
+ 
+  decreasePower();
+  
+  display.display();
+}
+void playPoweringDone() {
+  display.clearDisplay();
+  display.drawBitmap(0, 0, eyes_satisfied, 128, 64, WHITE);
+  display.display();
+  playDonePoweringSound();
+  delay(1500);
+  state = IDLE;
+  timeLatestIdleStarted = millis(); // Hack: for some reason I need to define this here as well.
+}
+
+void playNeedsTalking() {
+  
+  playNeedsTalkingSound();
+  
+  for (int i = 0; i < 4; i++) {
+    
+    display.clearDisplay();
+    display.drawBitmap(0, 0, needs_talking_1, 128, 64, WHITE);
+
+    // Text
+    display.setTextColor(SSD1306_BLACK);
+    display.setCursor(text_x+1,text_y);
+    display.setTextSize(1);
+    display.cp437(true);
+    display.print(F("z¤!¤%Zzz%"));
+    
+    display.display();
+  
+    delay(500);
+    
+    display.clearDisplay();
+    display.drawBitmap(0, 0, needs_talking_2, 128, 64, WHITE);
+
+    // Text (some re-definitions might be redundant)
+    display.setTextColor(SSD1306_BLACK);
+    display.setCursor(text_x+1,text_y);
+    display.setTextSize(1);
+    display.cp437(true);
+    display.print(F("z¤!¤%Zzz%"));
+    
+    display.display();
+
+    delay(500);
+  }
+  
+  Serial.println("Switching to decrypted");
+  state = BEING_DECRYPTED;
+  
+}
+
 
 // Matching Game
 void runMatchingGame() {
@@ -903,226 +1195,6 @@ void runMatchingGame() {
 }
 
 
-int generateEventTiming(int min, int max) {
-  int timing = random(min, max);
-  return timing;
-}
-
-// SOUNDS //
-void playStartupSound() {
-  tone(soundPin,500,200);
-  delay(200);
-  tone(soundPin,1000,200);
-  delay(400);
-  tone(soundPin,700,200);
-  delay(200);
-  tone(soundPin,1100,200);
-}
-
-void playNeedsPowerSound() {
-  if( needsPowerSoundPlayed != true) {
-    tone(soundPin,700,50);
-    delay(500);
-    tone(soundPin,800,50);
-    delay(500);
-    tone(soundPin,600,50);
-    needsPowerSoundPlayed = true;
-  }
-}
-void playPoweredActionSound(){
-  tone(soundPin,5000,5);
-  delay(5);
-}
-
-void playDonePoweringSound() {
-   if(donePoweringSoundPlayed != true) {
-      tone(soundPin,10000,50);
-      delay(50);
-      tone(soundPin,8000,50);
-      delay(50);
-      tone(soundPin,10000,50);
-      delay(50);
-      tone(soundPin,8000,50);
-      delay(50);
-      tone(soundPin,8000,50);
-      delay(50);
-      tone(soundPin,10000,50);
-      delay(50);
-      tone(soundPin,10000,50);
-      delay(50);
-      tone(soundPin,8000,50);
-      delay(50);
-      tone(soundPin,8000,50);
-      delay(50);
-      tone(soundPin,10000,50);
-      donePoweringSoundPlayed = true;
-   }
-}
-
-void playNeedsTalkingSound() {
-  if( needsTalkingSoundPlayed != true) {
-    tone(soundPin,7000,50);
-    delay(10);
-    tone(soundPin,8000,50);
-    delay(50);
-    tone(soundPin,5000,100);
-    delay(50);
-    tone(soundPin,10000,50);
-    delay(50);
-    needsTalkingSoundPlayed = true;
-    noTone(soundPin);
-  }
-}
-
-void playDecryptActionSound() {
-   tone(soundPin,5000,100);
-}
-
-void playDoneDecryptingSound() {
-   if(doneDecryptingSoundPlayed != true) {
-      tone(soundPin,10000,50);
-      delay(50);
-      tone(soundPin,8000,50);
-      delay(50);
-      tone(soundPin,10000,50);
-      delay(50);
-      tone(soundPin,8000,50);
-      delay(50);
-      tone(soundPin,8000,50);
-      delay(50);
-      tone(soundPin,10000,50);
-      delay(50);
-      tone(soundPin,10000,50);
-      delay(50);
-      tone(soundPin,8000,50);
-      delay(50);
-      tone(soundPin,8000,50);
-      delay(50);
-      tone(soundPin,10000,50);
-      doneDecryptingSoundPlayed = true;
-   }
-}
-
-
-// ANIMATIONS & some state logic //
-
-void playIdle() {
-  // Eyes open
-  display.clearDisplay();
-  display.drawBitmap(0, 0, eyes_open, 128, 64, WHITE);
-  
-  display.display();
-  delay(2000); // eyes open for value
-
-  // Eyes blinking
-  blinkEyes(500); // parameter: how long the eyes stay closed
-  delay(500);
-  blinkEyes(500);
-}
-
-
-// Closes eyes for the time of the duration and opens them
-void blinkEyes(int blinkduration) {
-  display.clearDisplay();
-  display.drawBitmap(0, 0, eyes_closed, 128, 64, WHITE);
-  display.display();
-  delay(blinkduration);
-  display.clearDisplay();
-  display.drawBitmap(0, 0, eyes_open, 128, 64, WHITE);
-  display.display();
-}
-
-void playNeedsPower() {
-  // Sample needs power routine
-  // 1st picture
-  display.clearDisplay();
-  display.drawBitmap(0, 0, needs_power_1, 128, 64, WHITE);
-  display.display();
-  playNeedsPowerSound();
-  delay(200);
-  // 2nd picture
-  display.clearDisplay();
-  display.drawBitmap(0, 0, needs_power_2, 128, 64, WHITE);
-  display.display();
-  delay(200);
-}
-void playBeingPowered() {
-  Serial.println("playBeingPowered inside the loop");
-  display.clearDisplay();
-  display.drawBitmap(0, 0, powering_1, 128, 64, WHITE);
-  
-  //Power Bar
-  display.drawRect(1,54,126,10,WHITE);
-  display.fillRect(3,56,122 * stat_power / 100,8,WHITE);
- 
-  decreasePower();
-  
-  display.display();
-}
-void playPoweringDone() {
-  display.clearDisplay();
-  display.drawBitmap(0, 0, eyes_satisfied, 128, 64, WHITE);
-  display.display();
-  playDonePoweringSound();
-  delay(1500);
-  state = IDLE;
-  timeLatestIdleStarted = millis(); // Hack: for some reason I need to define this here as well.
-}
-
-void playNeedsTalking() {
-  display.setTextColor(SSD1306_BLACK);
-  display.setCursor(text_x,text_y);
-  display.setTextSize(1);
-  display.cp437(true);
-  display.clearDisplay();
-  display.drawBitmap(0, 0, needs_talking_1, 128, 64, WHITE);
-  display.print(F("z¤!¤%Zzz%"));
-  display.display();
-  playNeedsTalkingSound();
-  
-  delay(500);
-  
-  display.clearDisplay();
-  display.drawBitmap(0, 0, needs_talking_2, 128, 64, WHITE);
-
-  display.setTextColor(SSD1306_BLACK);
-  display.setCursor(text_x,text_y);
-  display.setTextSize(1);
-  display.cp437(true);
-  display.print(F("z¤!¤%Zzz%"));
-  display.display();
-  
-  delay(500);
-
-    display.setTextColor(SSD1306_BLACK);
-  display.setCursor(text_x,text_y);
-  display.setTextSize(1);
-  display.cp437(true);
-  display.clearDisplay();
-  display.drawBitmap(0, 0, needs_talking_1, 128, 64, WHITE);
-  display.print(F("z¤!¤%Zzz%"));
-  display.display();
-  playNeedsTalkingSound();
-  
-  delay(500);
-  
-  display.clearDisplay();
-  display.drawBitmap(0, 0, needs_talking_2, 128, 64, WHITE);
-
-  display.setTextColor(SSD1306_BLACK);
-  display.setCursor(text_x,text_y);
-  display.setTextSize(1);
-  display.cp437(true);
-  display.print(F("z¤!¤%Zzz%"));
-  display.display();
-  
-  delay(500);
-  Serial.println("PlayNeedsTalking 4th time done, switching to decrypted");
-
-  state = BEING_DECRYPTED;
-  
-}
-
 
 /*
 void playBeingDecrypted() {
@@ -1155,34 +1227,54 @@ void playDecryptingDone() {
   display.clearDisplay();
   display.drawBitmap(0, 0, decrypting_done, 128, 64, WHITE);
 
+  
+  // Print text to the screen
   display.setTextColor(SSD1306_BLACK);
-  display.setCursor(text_x,text_y); 
   display.setTextSize(1);
   display.cp437(true);
-  display.print(F("You're great!"));
-  display.display();
-  playDoneDecryptingSound();
   
-  delay(5000);
+  int variation = random(0,3);
+  if (variation == 0) {
+    display.setCursor(text_x-5,text_y); 
+    display.print(F("You're great!"));
+  } else if (variation == 1) {
+    display.setCursor(text_x-8,text_y); 
+    display.print(F("I'm fixie bot!"));
+  } else if (variation == 2) {
+    display.setCursor(text_x,text_y); 
+    display.print(F("GGJ2020 <3"));
+  }
+  
+  display.display();
+
+  // Play sound
+  playDoneDecryptingSound();
+
+  // Show the message for x amount of time
+  delay(6000);
   // Returning to idle
   state = IDLE;
-  Serial.println("should go to idle!");
-  Serial.println(firstIdleFrame);
   timeLatestIdleStarted = millis(); // Hack: for some reason I need to define this here as well.
-  //testRunFinished = true;
 }
 
 
 
 /* POWER FUNCTIONS */
 void increasePower() {
-  if (state == NEEDS_POWER || state == BEING_POWERED) { // Only if the state is needs power or being powered
-    state = BEING_POWERED;
-    if (stat_power < 100) {
-      Serial.println("Increased power");
-      //playPoweredActionSound();
-      stat_power = stat_power + 0.5;
-      //stat_power = stat_power + 20;
+  
+    if (state == NEEDS_POWER || state == BEING_POWERED) { // Only if the state is needs power or being powered
+      state = BEING_POWERED; // Switch state to being powered
+
+      if (isIncreasingPower != true) { // Check that the sound has been played till end until triggering the next event from the control
+        if (stat_power < 100) {
+          //Serial.println("Increased power");
+          isIncreasingPower = true;
+          stat_power = stat_power + 0.5;
+          //playPoweredActionSound(); // This bugs for some reason...
+          //Serial.print("Power is increased");
+          isIncreasingPower = false;
+          //stat_power = stat_power + 20;
+        }
     }
   }
 }
@@ -1191,17 +1283,6 @@ void decreasePower() {
    if (stat_power > 0) {
     stat_power = stat_power - 0.05;
   }
-}
-
-void decryptMessage() {
-  //startMatchingGame();
-  /*if (state == NEEDS_TALKING || state == BEING_DECRYPTED) { // Only if the state is needs decrypting or being decrypted
-    state = BEING_DECRYPTED;
-    if (stat_decrypt < 100) {
-      playDecryptActionSound();
-      stat_decrypt = stat_decrypt + 20;
-    }
-  }*/
 }
 
 
